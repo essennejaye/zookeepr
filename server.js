@@ -3,10 +3,14 @@ const path = require('path');
 const express = require('express');
 const PORT = process.env.PORT || 3001;
 const app = express(); // allows creation of routes to data
+
 // parse incoming string or array data
 app.use(express.urlencoded({ extended: true }));
 // parse incoming JSON data
 app.use(express.json());
+// express middleware that instructs server to make certain files available when rendering html
+app.use(express.static('public'));
+
 const { animals } = require('./data/animals');
 const { json } = require('body-parser');
 
@@ -74,7 +78,7 @@ function validateAnimal(animal) {
     if (!animal.diet || typeof animal.diet !== 'string') {
         return false;
     }
-    if (!animal.personalityTraits || typeof !Array.isArray(animal.personalityTraits)) {
+    if (!animal.personalityTraits || !Array.isArray(animal.personalityTraits)) {
         return false;
     }
     return true;
@@ -102,16 +106,31 @@ app.get('/api/animals/:id', (req, res) => {
 
 // post represents action of client requesting server to accept data
 app.post('/api/animals', (req, res) => {
+    // console.log(req);
     // set id based on what the next index of the array will be
     req.body.id = animals.length.toString();
 
     if (!validateAnimal(req.body)) {
+        // console.log('validation failed')
         res.status(400).send('The animal is not properly formatted.');
     } else {
+        // console.log('validation passed')
+
         // add animal to json file and animals array in this function
         const animal = createNewAnimal(req.body, animals);
         res.json(animal);
     }
+});
+
+// '/' root of the server, sending html file to server to render
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, './public/index.html'));
+});
+app.get('/animals', (req, res) => {
+    res.sendFile(path.join(__dirname, './public/animals.html'));
+});
+app.get('/zookeepers', (req, res) => {
+    res.sendFile(path.join(__dirname, './public/zookeepers.html'));
 });
 
 app.listen(PORT, () => {
